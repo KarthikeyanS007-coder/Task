@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech to Text Converter</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            margin-top: 30px;
+        }
+        .card {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border: none;
+            border-radius: 15px;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0;
+            padding: 20px;
+        }
+        .btn-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 30px;
+            font-weight: 600;
+        }
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            background-color: #f0f0ff;
+            border-color: #764ba2;
+        }
+        .audio-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        .transcription-box {
+            background: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+            border: 1px solid #e0e0e0;
+        }
+        .badge-processing {
+            background-color: #ffc107;
+            color: black;
+        }
+        .badge-success {
+            background-color: #28a745;
+        }
+        .badge-error {
+            background-color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <!-- Upload Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h2 class="mb-0">🎤 Speech to Text Converter</h2>
+                    </div>
+                    <div class="card-body p-5">
+                        <form method="POST" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="upload-area">
+                                <div class="mb-3">
+                                    <i class="fas fa-file-audio" style="font-size: 48px; color: #667eea; margin-bottom: 20px;"></i>
+                                    <h5>Upload WAV Audio File</h5>
+                                    <p class="text-muted mb-4">Click to browse or drag and drop</p>
+                                    {{ form.audio_file }}
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary btn-custom btn-lg w-100">
+                                    Convert to Text
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Results Card -->
+                {% if audio_files %}
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="mb-0">📝 Conversion History</h3>
+                    </div>
+                    <div class="card-body">
+                        {% for audio in audio_files %}
+                        <div class="audio-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="mb-2">
+                                        <strong>{{ audio.uploaded_at|date:"M d, Y H:i" }}</strong>
+                                        {% if audio.is_processed %}
+                                            {% if audio.error_message %}
+                                            <span class="badge badge-error">Error</span>
+                                            {% else %}
+                                            <span class="badge badge-success">Completed</span>
+                                            {% endif %}
+                                        {% else %}
+                                        <span class="badge badge-processing">Processing...</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if audio.error_message %}
+                                    <div class="transcription-box">
+                                        <strong>Error:</strong> {{ audio.error_message }}
+                                    </div>
+                                    {% elif audio.transcription %}
+                                    <div class="transcription-box">
+                                        <strong>Transcription:</strong>
+                                        <p class="mb-0 mt-2">{{ audio.transcription }}</p>
+                                    </div>
+                                    {% elif audio.is_processed %}
+                                    <div class="transcription-box">
+                                        <p class="mb-0 text-muted">No speech detected in audio</p>
+                                    </div>
+                                    {% else %}
+                                    <div class="transcription-box">
+                                        <p class="mb-0 text-muted">Processing your audio...</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <a href="{% url 'delete_audio' audio.id %}" class="btn btn-sm btn-outline-danger ms-3" onclick="return confirm('Are you sure?')">
+                                    Delete
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto-refresh for processing audio
+        function checkProcessingStatus() {
+            const processingElements = document.querySelectorAll('.badge-processing');
+            if (processingElements.length > 0) {
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            }
+        }
+        checkProcessingStatus();
+    </script>
+</body>
+</html>
